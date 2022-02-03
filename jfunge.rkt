@@ -76,6 +76,7 @@
       ,@get-cell
       ,@put-cell
       ,@random-dir
+      ,@write-num
 
       ;; cell table for cell puts
       (align ,cell-size)
@@ -211,6 +212,60 @@
     (cmovne r14 rbx)
     (ret)))
 
+;; rdi: number to write
+(define write-num
+  `((label write_num)
+
+    (cmp rdi 0)
+    (je .write_num_zero)
+    (jg .write_num_pos)
+
+    (push rdi)
+    (push ,(char->integer #\-))
+    (mov rax 1)
+    (mov rdi 1)
+    (mov rsi rsp)
+    (mov rdx 1)
+    (syscall)
+    (pop rax)
+    (pop rdi)
+    (neg rdi)
+
+    (label .write_num_pos)
+    (sub rsp 24)
+    (mov rax rdi)
+    (mov rbx 24)
+    (mov rcx 10)
+    (label .write_num_loop)
+    (xor rdx rdx)
+    (div rcx)
+    (add rdx ,(char->integer #\0))
+    (sub rbx 1)
+    (mov byte [rsp + rbx] rdx)
+    (cmp rax 0)
+    (jne .write_num_loop)
+
+    (mov rax 1)   ; sys_write
+    (mov rdi 1)   ; stdout
+    (mov rsi rsp)
+    (add rsi rbx) ; pointing to location of rbx on stack
+    (mov rdx 24)
+    (sub rdx rbx) ; length of num
+    (syscall)
+
+    (add rsp 24)
+    (ret)
+
+    (label .write_num_zero)
+    (push ,(char->integer #\0))
+    (mov rax 1)   ; sys_write
+    (mov rdi 1)   ; stdout
+    (mov rsi rsp) ; top of stack
+    (mov rdx 1)   ; one byte
+    (syscall)
+    (pop rax)
+    (ret)))
+
 (define top-cell
   `((align ,cell-size)
     ;; quote and bridge slide down nops
@@ -338,14 +393,14 @@
   `(,@(safe-pop 'rbx)
     ,@(safe-pop 'rax)
     (xor rdx rdx)
-    (div rbx)
+    (idiv rbx)
     (push rax)))
 
 (define %-body
   `(,@(safe-pop 'rbx)
     ,@(safe-pop 'rax)
     (xor rdx rdx)
-    (div rbx)
+    (idiv rbx)
     (push rdx)))
 
 (define !-body
@@ -419,7 +474,8 @@
 
 ;; pop number and print decimal
 (define .-body
-  `()) ;; TODO
+  `(,@(safe-pop 'rdi)
+    (call write_num)))
 
 (define comma-body
   `((mov rax 1)   ; sys_write

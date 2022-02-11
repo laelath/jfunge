@@ -515,15 +515,19 @@
 ;; read byte
 (define ~-body
   `((xor rax rax) ; sys_read
-    (mov rdi 1)   ; stdout
+    (xor rdi rdi) ; stdin
     (push rax)    ; allocate space on top of stack
     (mov rsi rsp) ; top of stack
     (mov rdx 1)   ; one byte
-    (syscall)))
+    (syscall)
+    (mov rbx -1)
+    (cmp rax 1)   ; if rax is zero, push -1 instead
+    (cmove rbx [rsp])
+    (mov [rsp] rbx)))
 
 (define @-body
-  `((mov rax 60) ; sys_exit
-    (mov rdi 0)  ; exit code 0
+  `((mov rax 60)  ; sys_exit
+    (xor rdi rdi) ; exit code 0
     (syscall)))
 
 (define noop-body

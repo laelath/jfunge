@@ -50,6 +50,7 @@
     [`(mov ,d ,s) (bop->str 'mov d s)]
     [`(movzx ,d byte [,(? register? reg) + ,(? imm? i)])
      (format "  movzx ~a, BYTE [~a + ~a]~n" (loc->str d) reg i)]
+    [`(lea ,d ,s) (bop->str 'lea d s)]
     [`(neg ,d) (format "  neg ~a~n" (loc->str d))]
     [`(add ,d ,s) (bop->str 'add d s)]
     [`(sub ,d ,s) (bop->str 'sub d s)]
@@ -91,6 +92,8 @@
   (match s
     [(? register? reg) symbol->string reg]
     [`(,(? register? reg)) (format "[~a]" reg)]
+    [`(,(? symbol? l)) (format "[~a]" l)]
     [`(,(? register? reg) + ,(? imm? i)) (format "[~a + ~a]" reg i)]
     [`(,(? register? r1) + ,(? register? r2)) (format "[~a + ~a]" r1 r2)]
+    [`(,(? register? r) + ,(? symbol? l)) (format "[~a + ~a]" r l)]
     [(? symbol? s) symbol->string s]))

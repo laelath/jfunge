@@ -61,13 +61,13 @@
       (mov r14 ,cell-size)
       ;; allow modification of the cell grid
       (mov rax 10) ; sys_mprotect
-      (mov rdi _start)
-      (mov rsi _end)
+      (lea rdi [_start])
+      (lea rsi [_end])
       (sub rsi rdi) ; rsi has program length
       (mov rdx #x7) ; READ | WRITE | EXEC
       (syscall)
       ;; start execution
-      (mov r15 _grid_start)
+      (lea r15 [_grid_start])
       (mov rax ,(+ (* (+ width 2) cell-size) quote-size))
       (add r15 rax)
       (jmp r15)
@@ -127,8 +127,7 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (mov rbx _grid_start) ; TODO: add lea, replace these two with one
-    (add rax rbx)
+    (lea rax [rax + _grid_start])
     (movzx rax byte [rax + 1])
     (mov rbx ,(char->integer #\"))
     (test rax #x80) ; if this bit is set, we read from a quote
@@ -164,12 +163,10 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (mov rbx _grid_start) ; TODO: replace with lea
-    (add rax rbx)
+    (lea rax [rax + _grid_start])
 
     (imul rdx ,cell-size)
-    (mov rbx _cell_table) ; TODO: replace with lea
-    (add rdx rbx) ; rdx has pointer to new cell data
+    (lea rdx [rdx + _cell_table]) ; rdx has pointer to new cell data
 
     ;; copy data from cell table to the grid
     ,@(append*

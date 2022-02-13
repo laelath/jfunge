@@ -141,8 +141,8 @@ wrinkle that this has to be done by a procedure outside the grid to prevent writ
 Oh wait... it's segfaulting?
 
 Perhaps this isn't surprising to people, especially those familiar with operating systems, but the system is "helpfully" preventing us from
-writing to out program by raising a segfault when we try to write to the memory pages containing the program code,
-assuming that any such writes must be erroneous because what madman would create a program that dynamically modifies itself?
+writing to the program by raising a segfault when we try to write to memory pages containing executable code,
+assuming that any such writes must be erroneous or the result of an abuse of a security vulnerability.
 
 The fix for this is thankfully simple. The setup instructions call `sys_mprotect` to enable writing to the memory pages in which the program grid reside.
 This does add one final challenge of ensuring that the grid is aligned to the start of a memory page

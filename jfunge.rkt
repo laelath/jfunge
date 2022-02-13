@@ -61,9 +61,9 @@
       (mov r14 ,cell-size)
       ;; allow modification of the cell grid
       (mov rax 10) ; sys_mprotect
-      (mov rdi _grid_start)
-      (mov rsi _grid_end)
-      (sub rsi rdi) ; rsi has grid length
+      (mov rdi _start)
+      (mov rsi _end)
+      (sub rsi rdi) ; rsi has program length
       (mov rdx #x7) ; READ | WRITE | EXEC
       (syscall)
       ;; start execution
@@ -84,7 +84,7 @@
       ,@(append* (build-list 128 (λ (n) (create-cell (integer->char n)))))
 
       ;; bit of a hack to get the start of the grid
-      (align 4096) ; linux x86_64 page size
+      (align 64)
       (label _grid_start)
 
       ;; grid
@@ -100,7 +100,7 @@
       ,@corner-cell
       ,@(append* (make-list width bot-cell))
 
-      (label _grid_end))))
+      (label _end))))
 
 (define (safe-pop reg)
   `((mov r11 rsp)

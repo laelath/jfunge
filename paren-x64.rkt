@@ -6,7 +6,7 @@
 
 (define (wrap-runtime p)
   (string-append
-   "global _start\n\nsection .text\n_start:\n"
+   "default rel\nglobal _main\n\nsection .text\n_main:\n"
    p))
 
 (define (generate-x64 p)

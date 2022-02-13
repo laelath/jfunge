@@ -60,8 +60,8 @@
       ;; default to left-to-right control flow
       (mov r14 ,cell-size)
       ;; allow modification of the cell grid
-      (mov rax 10) ; sys_mprotect
-      (lea rdi [_start])
+      (mov rax #x200000A) ; sys_mprotect -- macos
+      (lea rdi [_main])
       (lea rsi [_end])
       (sub rsi rdi) ; rsi has program length
       (mov rdx #x7) ; READ | WRITE | EXEC
@@ -127,7 +127,8 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (lea rax [rax + _grid_start])
+    (lea rbx [_grid_start])
+    (add rax rbx)
     (movzx rax byte [rax + 1])
     (mov rbx ,(char->integer #\"))
     (test rax #x80) ; if this bit is set, we read from a quote
@@ -163,10 +164,12 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (lea rax [rax + _grid_start])
+    (lea rbx [_grid_start])
+    (add rax rbx)
 
     (imul rdx ,cell-size)
-    (lea rdx [rdx + _cell_table]) ; rdx has pointer to new cell data
+    (lea rbx [_cell_table])
+    (add rdx rbx) ; rdx has pointer to new cell data
 
     ;; copy data from cell table to the grid
     ,@(append*
@@ -185,7 +188,7 @@
 
 (define random-dir
   `((label rand_dir)
-    (mov rax 318) ; sys_getrandom
+    (mov rax #x2000013E) ; sys_getrandom -- macos
     (push 0)      ; allocate space on stack
     (mov rdi rsp) ; top of stack
     (mov rsi 1)   ; one byte of randomness
@@ -222,7 +225,7 @@
 
     (push rdi)
     (push ,(char->integer #\-))
-    (mov rax 1)
+    (mov rax #x2000001) ;; sys_write -- macos
     (mov rdi 1)
     (mov rsi rsp)
     (mov rdx 1)
@@ -245,7 +248,7 @@
     (cmp rax 0)
     (jne .write_num_loop)
 
-    (mov rax 1)   ; sys_write
+    (mov rax #x2000001)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp)
     (add rsi rbx) ; pointing to location of rbx on stack
@@ -258,7 +261,7 @@
 
     (label .write_num_zero)
     (push ,(char->integer #\0))
-    (mov rax 1)   ; sys_write
+    (mov rax #x2000001)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp) ; top of stack
     (mov rdx 1)   ; one byte
@@ -478,7 +481,7 @@
     (call write_num)))
 
 (define comma-body
-  `((mov rax 1)   ; sys_write
+  `((mov rax #x2000001)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp) ; top of stack
     (mov rdx 1)   ; one byte
@@ -514,7 +517,7 @@
 
 ;; read byte
 (define ~-body
-  `((xor rax rax) ; sys_read
+  `((mov rax #x2000000) ; sys_read -- macos
     (xor rdi rdi) ; stdin
     (push rax)    ; allocate space on top of stack
     (mov rsi rsp) ; top of stack
@@ -526,7 +529,7 @@
     (mov [rsp] rbx)))
 
 (define @-body
-  `((mov rax 60)  ; sys_exit
+  `((mov rax #x200003C)  ; sys_exit -- macos
     (xor rdi rdi) ; exit code 0
     (syscall)))
 

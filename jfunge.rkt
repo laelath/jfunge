@@ -127,7 +127,8 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (add rax _grid_start)
+    (mov rbx _grid_start) ; TODO: add lea, replace these two with one
+    (add rax rbx)
     (movzx rax byte [rax + 1])
     (mov rbx ,(char->integer #\"))
     (test rax #x80) ; if this bit is set, we read from a quote
@@ -163,10 +164,12 @@
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
     (imul rax ,cell-size)
-    (add rax _grid_start)
+    (mov rbx _grid_start) ; TODO: replace with lea
+    (add rax rbx)
 
     (imul rdx ,cell-size)
-    (add rdx _cell_table) ; rdx has pointer to new cell data
+    (mov rbx _cell_table) ; TODO: replace with lea
+    (add rdx rbx) ; rdx has pointer to new cell data
 
     ;; copy data from cell table to the grid
     ,@(append*

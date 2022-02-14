@@ -60,8 +60,8 @@
       ;; default to left-to-right control flow
       (mov r14 ,cell-size)
       ;; allow modification of the cell grid
-      (mov rax #x200000A) ; sys_mprotect -- macos
-      (lea rdi [_main])
+      (mov rax #x200004A) ; sys_mprotect -- macos
+      (lea rdi [start])
       (lea rsi [_end])
       (sub rsi rdi) ; rsi has program length
       (mov rdx #x7) ; READ | WRITE | EXEC
@@ -188,11 +188,10 @@
 
 (define random-dir
   `((label rand_dir)
-    (mov rax #x2000013E) ; sys_getrandom -- macos
+    (mov rax #x20001F4) ; sys_getentropy -- macos
     (push 0)      ; allocate space on stack
     (mov rdi rsp) ; top of stack
     (mov rsi 1)   ; one byte of randomness
-    (xor rdx rdx) ; clear flags
     (syscall)
     (pop rax)
     (test rax 2)
@@ -225,7 +224,7 @@
 
     (push rdi)
     (push ,(char->integer #\-))
-    (mov rax #x2000001) ;; sys_write -- macos
+    (mov rax #x2000004) ;; sys_write -- macos
     (mov rdi 1)
     (mov rsi rsp)
     (mov rdx 1)
@@ -248,7 +247,7 @@
     (cmp rax 0)
     (jne .write_num_loop)
 
-    (mov rax #x2000001)   ; sys_write -- macos
+    (mov rax #x2000004)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp)
     (add rsi rbx) ; pointing to location of rbx on stack
@@ -261,7 +260,7 @@
 
     (label .write_num_zero)
     (push ,(char->integer #\0))
-    (mov rax #x2000001)   ; sys_write -- macos
+    (mov rax #x2000004)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp) ; top of stack
     (mov rdx 1)   ; one byte
@@ -481,7 +480,7 @@
     (call write_num)))
 
 (define comma-body
-  `((mov rax #x2000001)   ; sys_write -- macos
+  `((mov rax #x2000004)   ; sys_write -- macos
     (mov rdi 1)   ; stdout
     (mov rsi rsp) ; top of stack
     (mov rdx 1)   ; one byte
@@ -517,7 +516,7 @@
 
 ;; read byte
 (define ~-body
-  `((mov rax #x2000000) ; sys_read -- macos
+  `((mov rax #x2000003) ; sys_read -- macos
     (xor rdi rdi) ; stdin
     (push rax)    ; allocate space on top of stack
     (mov rsi rsp) ; top of stack
@@ -529,7 +528,7 @@
     (mov [rsp] rbx)))
 
 (define @-body
-  `((mov rax #x200003C)  ; sys_exit -- macos
+  `((mov rax #x2000001)  ; sys_exit -- macos
     (xor rdi rdi) ; exit code 0
     (syscall)))
 

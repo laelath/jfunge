@@ -406,9 +406,10 @@
 (define !-body
   `(,@(safe-pop 'rax)
     (mov rbx 1)
+    (xor rcx rcx)
     (cmp rax 0)
-    (cmove rbx rax)
-    (push rbx)))
+    (cmove rcx rbx)
+    (push rcx)))
 
 (define gt-body
   `(,@(safe-pop 'rax)

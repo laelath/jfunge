@@ -59,13 +59,6 @@
       (mov r13 ,height)
       ;; default to left-to-right control flow
       (mov r14 ,cell-size)
-      ;; allow modification of the cell grid
-      (mov rax 10) ; sys_mprotect
-      (lea rdi [_start])
-      (lea rsi [_end])
-      (sub rsi rdi) ; rsi has program length
-      (mov rdx #x7) ; READ | WRITE | EXEC
-      (syscall)
       ;; start execution
       (lea r15 [_grid_start])
       (mov rax ,(+ (* (+ width 2) cell-size) quote-size))
@@ -98,9 +91,7 @@
              ,@right-cell))
          lines)
       ,@corner-cell
-      ,@(append* (make-list width bot-cell))
-
-      (label _end))))
+      ,@(append* (make-list width bot-cell)))))
 
 (define (safe-pop reg)
   `((mov r11 rsp)

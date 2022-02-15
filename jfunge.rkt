@@ -172,6 +172,7 @@
     (add r15 r14)
     (jmp r15)))
 
+;; moves a random, valid direction into r14
 (define random-dir
   `((label rand_dir)
     (mov rax 318) ; sys_getrandom

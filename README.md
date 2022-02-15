@@ -102,6 +102,9 @@ Then the ramp of the next cell will again add `r14` to `r15`, still pointing to 
 
 Now we get to a design decision.
 Currently if there is a bridge next to the fence, the bridge will *not* cause the cell after the wrap-around to be skipped.
+This was done to make it so eventual grid-resizing will not change the behavior of existing cells.
+This boundary behavior can be thought of as execution eventually wrapping around to the other side, though it doesn't know
+exactly how long that will take.
 
 ```
 ┌───┬───┬───┐
@@ -125,31 +128,22 @@ This instruction pops `y` and `x` off the stack and 'gets' the ascii value of an
 The straightforwards way that this could be implemented would be to add a data table to the x64 program that contains the original character bytes.
 However this is uncesseary.
 Recall that we already have the character representation of each cell already for quote mode.
-Instead of reading from a table, it reads the byte from the cell grid that occurs right after the `push` opcode in the quote section.
-This has one fatal flaw; quote cells themselves have an add instruction there rather than a push one.
+Instead of reading from a table, the ascii value can be read from the byte from the cell grid that occurs right after the `push` opcode in the quote section.
+This has one exception; quote cells themselves have an add instruction there rather than a push one.
 Fortunately for us, the instruction there has the high bit of the byte set, something that cannot happen in other cells because valid Befunge programs
-are all ascii text, allowing a simple `test` with `0x80` to determine if the data we read should be replaced with `#\"`.
+are all ascii text, allowing a `test` with `0x80` to determine if the data we read should be replaced with `"`.
 
 ### p
 
 This instruction pops `y`, `x`, and a character `c` off the stack, then 'puts' that instruction on the grid at `(x,y)`.
-Despite the horrors of self-modifying code, with all the setup the implementation of `g` is not fairly straightforwards.
+Despite the horrors of self-modifying code, with all the setup the implementation of `g` is fairly straightforwards.
 
 A table is added to the generated executable of all ascii cells that is indexed by `c`, and the data copied onto the cell grid, with the slight
 wrinkle that this has to be done by a procedure outside the grid to prevent writing to memory that is currently being executed.
 
-Oh wait... it's segfaulting?
-
-Perhaps this isn't surprising to people, especially those familiar with operating systems, but the system is "helpfully" preventing us from
-writing to the program by raising a segfault when we try to write to memory pages containing executable code,
-assuming that any such writes must be erroneous or the result of an abuse of a security vulnerability.
-
-The fix for this is thankfully simple. The setup instructions call `sys_mprotect` to enable writing to the memory pages in which the program grid reside.
-This does add one final challenge of ensuring that the grid is aligned to the start of a memory page
-(though this isn't strictly necessary as we could enable writing to the whole program).
-To do this we take the admittedly hacky and not-fully-general route of telling NASM to align the start of the grid to 4KiB - the most common Linux page size.
+Because the output code expects to be able to write to executable program memory, the linker needs to set those pages as writable in the ELF file.
+On Linux this is done by passing `--omagic` to the linker.
 
 ## TODO
 * Grid resizing on out-of-bounds writes (very hard)
-* Decimal number I/O instructions (tedious)
-* Shrink cell size for more compact programs
+* Decimal number input (tedious)

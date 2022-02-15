@@ -136,10 +136,11 @@ are all ascii text, allowing a `test` with `0x80` to determine if the data we re
 ### p
 
 This instruction pops `y`, `x`, and a character `c` off the stack, then 'puts' that instruction on the grid at `(x,y)`.
-Despite the horrors of self-modifying code, with all the setup the implementation of `g` is fairly straightforwards.
+Despite the horrors of self-modifying code, with all the setup we've done the implementation of `g` is fairly straightforwards.
 
-A table is added to the generated executable of all ascii cells that is indexed by `c`, and the data copied onto the cell grid, with the slight
-wrinkle that this has to be done by a procedure outside the grid to prevent writing to memory that is currently being executed.
+A table is added to the generated executable of all ascii cells as an array indexed by `c`.
+When a `p` instruction is executed, it copies the data from this table onto the cell grid at the location specified.
+This has to be done by a procedure outside the grid to prevent writing to memory that is currently being executed.
 
 Because the output code expects to be able to write to executable program memory, the linker needs to set those pages as writable in the ELF file.
 On Linux this is done by passing `--omagic` to the linker.

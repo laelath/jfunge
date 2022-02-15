@@ -19,10 +19,10 @@ Yes this is clunky, I will automate these steps at some point.
 The compiler outputs an assembly program that is a 2D array of code 'cells' of a constant size.
 During run time the cursor location is stored in `r15` as a pointer to the start of the current cell,
 and the direction being stored in `r14` as an offset from the start of the current cell to the start of the next.
-Then the direction changing instructions `<`, `>`, `^`, and `v` can be implemented as `mov`s to `r14`.
-Then each cell can end with the 'ramp' instructions `mov r15, r14`, `jmp r15`,
+Then the direction changing instructions `<`, `>`, `^`, and `v` can be implemented as `mov`s to `r14`,
+with each cell ending with 'ramp' instructions `mov r15, r14`, `jmp r15` to send execution to the next cell without branching.
 
-The downside of this method is how to handle execution flowing out of bounds of the grid.
+This method does however, cause potential problems for control flow at grid boundaries.
 By the Befunge spec. Befunge programs actually exist in a torus, so execution needs to wrap around to the other side of the grid.
 To implement this wrapping, 'fence' cells are placed around the perimeter of the grid that jump `r15` to the opposite side.
 

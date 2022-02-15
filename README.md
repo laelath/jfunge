@@ -10,7 +10,7 @@ To compile a program, run the following commands:
 ```
 racket -t jfunge.rkt -m foo.bf > foo.s
 nasm -f elf64 foo.s
-ld -o foo foo.o
+ld -N -o foo foo.o
 ```
 Yes this is clunky, I will automate these steps at some point.
 

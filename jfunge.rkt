@@ -35,6 +35,7 @@
 ;; Ramp is the bit of code that launches execution on to the next cell
 
 (define cell-size 64)
+(define cell-shift 6)
 (define ramp-size 6)
 (define quote-size (+ 4 ramp-size))
 
@@ -60,7 +61,7 @@
       ;; default to left-to-right control flow
       (mov r14 ,cell-size)
       ;; start execution
-      (lea r15 [_grid_start])
+      (mov r15 _grid_start)
       (mov rax ,(+ (* (+ width 2) cell-size) quote-size))
       (add r15 rax)
       (jmp r15)
@@ -93,12 +94,6 @@
       ,@corner-cell
       ,@(append* (make-list width bot-cell)))))
 
-(define (safe-pop reg)
-  `((mov r11 rsp)
-    (pop ,reg)
-    (cmp rbp rsp)
-    (cmove rsp r11)))
-
 ;; returns 0 when given x,y is out of bounds
 ;; TODO: return #\space when resizing is implemented
 ;; rdi: y
@@ -117,8 +112,9 @@
     (add rsi r12)
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
-    (imul rax ,cell-size)
-    (lea rax [rax + _grid_start])
+    (shl rax ,cell-shift)
+    (mov rbx _grid_start)
+    (add rax rbx)
     (movzx rax byte [rax + 1])
     (mov rbx ,(char->integer #\"))
     (test rax #x80) ; if this bit is set, we read from a quote
@@ -153,11 +149,13 @@
     (add rsi r12)
     (add rsi 2)
     (add rax rsi) ; rax has y * (width + 2) + width + x + 2
-    (imul rax ,cell-size)
-    (lea rax [rax + _grid_start])
+    (shl rax ,cell-shift)
+    (mov rbx _grid_start)
+    (add rax rbx)
 
-    (imul rdx ,cell-size)
-    (lea rdx [rdx + _cell_table]) ; rdx has pointer to new cell data
+    (shl rdx ,cell-shift)
+    (mov rbx _cell_table)
+    (add rdx rbx) ; rdx has pointer to new cell data
 
     ;; copy data from cell table to the grid
     ,@(append*
@@ -196,7 +194,7 @@
     (label .rand_vert)
     (mov r14 r12)
     (add r14 2)
-    (imul r14 ,cell-size)
+    (shl r14 ,cell-shift)
     (mov rbx r14)
     (neg rbx)
     (test rax 1)
@@ -265,7 +263,7 @@
     (mov rax r12)         ; 3
     (add rax 2)           ; 4
     (imul rax r13)        ; 4
-    (imul rax ,cell-size) ; 4
+    (shl rax ,cell-shift) ; 4
     (add r15 rax)         ; 3
     (jmp r15)))           ; 3
 
@@ -277,7 +275,7 @@
     (mov rax r12)
     (add rax 2)
     (imul rax r13)
-    (imul rax ,cell-size)
+    (shl rax ,cell-shift)
     (sub r15 rax)
     (jmp r15)))
 
@@ -287,7 +285,7 @@
     ,@(make-list 10 '(nop))
     ;; regular entry
     (mov rax r12)
-    (imul rax ,cell-size)
+    (shl rax ,cell-shift)
     (add r15 rax)
     (jmp r15)))
 
@@ -297,7 +295,7 @@
     ,@(make-list 10 '(nop))
     ;; regular entry
     (mov rax r12)
-    (imul rax ,cell-size)
+    (shl rax ,cell-shift)
     (sub r15 rax)
     (jmp r15)))
 
@@ -325,12 +323,10 @@
         (nop)
         (nop))))
 
-(define (digit? c)
-  (char<=? #\0 c #\9))
-
 (define (cell-body c)
   (match c
-    [(? digit? _) (digit-cell c)]
+    [(? (λ (d) (char<=? #\0 d #\9)) d)
+     `((push ,(- (char->integer c) (char->integer #\0))))]
     [#\+ +-body]
     [#\- --body]
     [#\* *-body]
@@ -359,8 +355,11 @@
     [#\@ @-body]
     [_ noop-body]))
 
-(define (digit-cell c)
-  `((push ,(- (char->integer c) (char->integer #\0)))))
+(define (safe-pop reg)
+  `((mov r11 rsp)
+    (pop ,reg)
+    (cmp rbp rsp)
+    (cmove rsp r11)))
 
 (define +-body
   `(,@(safe-pop 'rax)
@@ -414,12 +413,13 @@
 (define ^-body
   `((mov r14 r12)
     (add r14 2)
-    (imul r14 ,(- cell-size))))
+    (shl r14 ,cell-shift)
+    (neg r14)))
 
 (define v-body
   `((mov r14 r12)
     (add r14 2)
-    (imul r14 ,cell-size)))
+    (shl r14 ,cell-shift)))
 
 (define <-body
   `((mov r14 ,(- cell-size))))
@@ -429,7 +429,8 @@
 
 ;; go in a random direction
 (define ?-body
-  `((call rand_dir)))
+  `((mov rax rand_dir)
+    (call rax)))
 
 (define _-body
   `(,@(safe-pop 'rax)
@@ -467,7 +468,8 @@
 ;; pop number and print decimal
 (define .-body
   `(,@(safe-pop 'rdi)
-    (call write_num)))
+    (mov rax write_num)
+    (call rax)))
 
 (define comma-body
   `((mov rax 1)   ; sys_write
@@ -492,12 +494,14 @@
   `(,@(safe-pop 'rdi) ; rdi <- y
     ,@(safe-pop 'rsi) ; rsi <- x
     ,@(safe-pop 'rdx) ; rdx <- char
-    (jmp put_cell)))
+    (mov rax put_cell)
+    (jmp rax)))
 
 (define g-body
   `(,@(safe-pop 'rdi) ; rdi <- y
     ,@(safe-pop 'rsi) ; rsi <- x
-    (call get_cell)
+    (mov rax get_cell)
+    (call rax)
     (push rax)))
 
 ;; read number

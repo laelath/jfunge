@@ -57,6 +57,8 @@
     [`(imul ,d ,s) (bop->str 'imul d s)]
     [`(div ,s) (format "  div ~a~n" (src->str s))]
     [`(idiv ,s) (format "  idiv ~a~n" (src->str s))]
+    [`(shl ,d ,s) (bop->str 'shl d s)]
+    [`(shr ,d ,s) (bop->str 'shr d s)]
     [`(xor ,d ,s) (bop->str 'xor d s)]
     [`(or ,d ,s) (bop->str 'or d s)]
     [`(cmp ,d ,s) (bop->str 'cmp d s)]
